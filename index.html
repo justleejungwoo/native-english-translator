@@ -1,0 +1,128 @@
+ <!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>원어민 영어 표현 변환기</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
+        body { background-color: #f5f7fa; color: #333; display: flex; justify-content: center; padding: 40px 20px; }
+        .container { background: #fff; width: 100%; max-width: 600px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        h1 { font-size: 1.5rem; margin-bottom: 8px; color: #1a1a1a; }
+        p.subtitle { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 6px; font-size: 0.85rem; color: #444; }
+        input[type="password"], textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95rem; }
+        textarea { height: 100px; resize: vertical; }
+        button { width: 100%; padding: 14px; background: #0066ff; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #0052cc; }
+        .result-box { margin-top: 25px; display: none; }
+        .result-item { background: #f8f9fa; border-left: 4px solid #0066ff; padding: 12px 16px; margin-bottom: 10px; border-radius: 0 8px 8px 0; }
+        .result-item strong { display: block; color: #0066ff; font-size: 0.8rem; margin-bottom: 4px; text-transform: uppercase; }
+        .result-item p { font-size: 1rem; color: #222; }
+        .adsense-placeholder { margin-top: 30px; padding: 20px; background: #eee; text-align: center; color: #888; border-radius: 8px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🇺🇸 원어민 영어 변환기</h1>
+    <p class="subtitle">어색한 직역 대신 원어민이 실제로 쓰는 뉘앙스로 바꿔드립니다.</p>
+
+    <div class="input-group">
+        <label for="apiKey">OpenAI API Key (로컬 테스트용)</label>
+        <input type="password" id="apiKey" placeholder="sk-..." />
+    </div>
+
+    <div class="input-group">
+        <label for="inputText">변환할 한글 또는 어색한 영어</label>
+        <textarea id="inputText" placeholder="예: 오늘 기분이 별로야 / I feel no good today"></textarea>
+    </div>
+
+    <button onclick="translateNative()">원어민 표현으로 변환하기</button>
+
+    <div id="resultBox" class="result-box">
+        <div class="result-item">
+            <strong>1. Natural (가장 자연스러운 일상 표현)</strong>
+            <p id="resNatural">-</p>
+        </div>
+        <div class="result-item" style="border-left-color: #28a745;">
+            <strong style="color: #28a745;">2. Casual / Slang (친근한/트렌디한 표현)</strong>
+            <p id="resCasual">-</p>
+        </div>
+        <div class="result-item" style="border-left-color: #6c757d;">
+            <strong style="color: #6c757d;">3. Formal (격식 있는/비즈니스 표현)</strong>
+            <p id="resFormal">-</p>
+        </div>
+    </div>
+
+    <!-- 구글 애드센스 광고 영역 -->
+    <div class="adsense-placeholder">
+        광고 영역 (구글 애드센스 승인 후 코드 삽입)
+    </div>
+</div>
+
+<script>
+async function translateNative() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const text = document.getElementById('inputText').value.trim();
+
+    if (!apiKey) {
+        alert('API Key를 입력해주세요.');
+        return;
+    }
+    if (!text) {
+        alert('변환할 문장을 입력해주세요.');
+        return;
+    }
+
+    const resultBox = document.getElementById('resultBox');
+    resultBox.style.display = 'block';
+    document.getElementById('resNatural').innerText = '변환 중...';
+    document.getElementById('resCasual').innerText = '변환 중...';
+    document.getElementById('resFormal').innerText = '변환 중...';
+
+    const prompt = `
+    You are a native English translator. Convert the following Korean or awkward English text into three native English expressions.
+    Return ONLY a JSON object with keys "natural", "casual", and "formal".
+
+    Text: "${text}"
+
+    JSON format example:
+    {
+      "natural": "I'm not feeling well today.",
+      "casual": "I'm feeling a bit off today.",
+      "formal": "I am not feeling at my best today."
+    }
+    `;
+
+    try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: "gpt-4o-mini",
+                messages: [{ role: "user", content: prompt }],
+                response_format: { type: "json_object" }
+            })
+        });
+
+        const data = await response.json();
+        const result = JSON.parse(data.choices[0].message.content);
+
+        document.getElementById('resNatural').innerText = result.natural;
+        document.getElementById('resCasual').innerText = result.casual;
+        document.getElementById('resFormal').innerText = result.formal;
+
+    } catch (error) {
+        alert('변환 실패: API 키나 네트워크 상태를 확인하세요.');
+        console.error(error);
+    }
+}
+</script>
+
+</body>
+</html>
